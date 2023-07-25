@@ -25,6 +25,24 @@ class MyServerCallbacks : public BLEServerCallbacks
     }
 };
 
+class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
+{
+    void onRead(BLECharacteristic *pCharacteristic)
+    {
+        Serial.println("onRead");
+    }
+
+    void onWrite(BLECharacteristic *pCharacteristic)
+    {
+        Serial.println("onWrite");
+        for (int i = 0; i < pCharacteristic->getValue().length(); i++)
+        {
+            Serial.print(pCharacteristic->getValue()[i]);
+        }
+        Serial.println();
+    }
+};
+
 void setup()
 {
     Serial.begin(115200);
@@ -38,11 +56,9 @@ void setup()
 
     pCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID,
-        BLECharacteristic::PROPERTY_READ |
-            BLECharacteristic::PROPERTY_WRITE |
-            BLECharacteristic::PROPERTY_NOTIFY |
-            BLECharacteristic::PROPERTY_INDICATE);
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
 
+    pCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
     pCharacteristic->addDescriptor(new BLE2902());
     pService->start();
 
@@ -50,21 +66,13 @@ void setup()
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(false);
     pAdvertising->setMinPreferred(0x0);
+
     BLEDevice::startAdvertising();
     Serial.println("Waiting a client connection to notify...");
 }
 
 void loop()
 {
-    if (deviceConnected)
-    {
-        pCharacteristic->setValue((uint8_t *)&value, 4);
-        pCharacteristic->notify();
-        Serial.println(value, HEX);
-        value++;
-        delay(500);
-    }
-
     if (!deviceConnected && oldDeviceConnected)
     {
         delay(500);
