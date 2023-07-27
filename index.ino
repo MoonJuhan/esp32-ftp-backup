@@ -105,5 +105,5 @@ void loop()
         pServer->startAdvertising();
     }
 
-    delay(5000);
+    delay(1000);
 }
