@@ -75,13 +75,25 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
             scanWiFi();
         }
 
-        // Serial.println(value.compare("/connect"));
-
-        for (short i = 0; i < pCharacteristic->getValue().length(); i++)
+        if (value.length() > 9 && value.compare(0, 9, "/connect"))
         {
-            Serial.print(pCharacteristic->getValue()[i]);
+            Serial.println("connect command");
+            Serial.println(WiFi.SSID(0).c_str());
+            Serial.println();
+
+            Serial.print("SSID No: ");
+            Serial.print(value[9]);
+            Serial.print(value[10]);
+            Serial.println();
+
+            Serial.print("Password: ");
+            for (short i = 0; i < value.substr(12).length(); i++)
+            {
+                Serial.print(value.substr(12)[i]);
+            }
+
+            Serial.println();
         }
-        Serial.println();
     }
 };
 
