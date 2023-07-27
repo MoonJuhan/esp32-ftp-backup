@@ -35,14 +35,33 @@ void scanWiFi()
     if (n == 0)
     {
         Serial.println(F("no networks found"));
+        pCharacteristic->setValue("no networks found");
     }
     else
     {
-        Serial.print(n);
-        Serial.println(F(" networks found"));
+        std::string str = "";
+        str += std::to_string(n);
+        str += " networks found\n";
+
+        for (short i = 0; i < n; ++i)
+        {
+            str += std::to_string(i + 1);
+            str += " | ";
+            str += WiFi.SSID(i).c_str();
+            str += "\n";
+            delay(10);
+        }
+
+        for (short i = 0; i < str.length(); i++)
+        {
+            Serial.print(str[i]);
+        }
+
+        pCharacteristic->setValue(str);
     }
 
-    WiFi.scanDelete();
+    pCharacteristic->notify();
+    Serial.println();
 }
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
@@ -51,7 +70,7 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
     {
         std::string value = pCharacteristic->getValue();
 
-        if (value.compare("/scan") == = 1)
+        if (value.compare("/scan") == 1)
         {
             scanWiFi();
         }
