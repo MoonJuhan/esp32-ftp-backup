@@ -2,7 +2,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include "WiFi.h"
+#include <WiFi.h>
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
@@ -28,13 +28,15 @@ class MyServerCallbacks : public BLEServerCallbacks
 
 void scanWiFi()
 {
-    Serial.println("scanWiFi");
+    Serial.println("WiFi scan started");
+    pCharacteristic->setValue("WiFi scan started");
+    pCharacteristic->notify();
 
     short n = WiFi.scanNetworks();
+    delay(100);
 
     if (n == 0)
     {
-        Serial.println(F("no networks found"));
         pCharacteristic->setValue("no networks found");
     }
     else
@@ -52,16 +54,58 @@ void scanWiFi()
             delay(10);
         }
 
-        for (short i = 0; i < str.length(); i++)
-        {
-            Serial.print(str[i]);
-        }
-
         pCharacteristic->setValue(str);
     }
 
     pCharacteristic->notify();
     Serial.println();
+}
+
+void connectWiFi(std::string inputValue)
+{
+    Serial.println("WiFi connect started");
+    pCharacteristic->setValue("WiFi connect started");
+    pCharacteristic->notify();
+
+    int ssidNumber = std::stoi(inputValue.substr(9, 2)) - 1;
+    std::string password = inputValue.substr(12);
+    password.pop_back();
+
+    Serial.print("SSID: *");
+    Serial.print(WiFi.SSID(ssidNumber).c_str());
+    Serial.print("*");
+    Serial.println();
+    Serial.print("Password: *");
+    Serial.print(password.c_str());
+    Serial.print("*");
+    Serial.println();
+
+    WiFi.begin(WiFi.SSID(ssidNumber).c_str(), password.c_str());
+
+    Serial.println("Connecting Wifi...");
+    short timer = 0;
+    while (WiFi.status() != WL_CONNECTED && timer < 20)
+    {
+        timer++;
+        delay(500);
+        Serial.print(".");
+        Serial.print(WiFi.status());
+    }
+
+    if (timer == 20)
+    {
+        Serial.println("Connection failed");
+        pCharacteristic->setValue("Connection failed");
+    }
+    else
+    {
+        Serial.println("");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        pCharacteristic->setValue("Connection success");
+    }
+
+    pCharacteristic->notify();
 }
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
@@ -77,22 +121,7 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
 
         if (value.length() > 9 && value.compare(0, 9, "/connect"))
         {
-            Serial.println("connect command");
-            Serial.println(WiFi.SSID(0).c_str());
-            Serial.println();
-
-            Serial.print("SSID No: ");
-            Serial.print(value[9]);
-            Serial.print(value[10]);
-            Serial.println();
-
-            Serial.print("Password: ");
-            for (short i = 0; i < value.substr(12).length(); i++)
-            {
-                Serial.print(value.substr(12)[i]);
-            }
-
-            Serial.println();
+            connectWiFi(value);
         }
     }
 };
